@@ -2,7 +2,7 @@
 /*
  * Open EVSE Firmware
  *
- * Copyright (c) 2011-2023 Sam C. Lin
+ * Copyright (c) 2011-2021 Sam C. Lin
  * Copyright (c) 2011-2014 Chris Howell <chris1howell@msn.com>
  * timer code Copyright (c) 2013 Kevin L <goldserve1@hotmail.com>
  * portions Copyright (c) 2014-2015 Nick Sayer <nsayer@kfu.com>
@@ -263,6 +263,25 @@ void wdt_init(void)
 
 
 #ifdef TEMPERATURE_MONITORING
+#ifdef TEMPERATURE_MONITORING_NY
+void TempMonitor::LoadThresh()
+{
+  m_ambient_thresh = eeprom_read_word((uint16_t *)EOFS_THRESH_AMBIENT);
+  if (m_ambient_thresh == 0xffff) {
+    m_ambient_thresh = TEMPERATURE_AMBIENT_THROTTLE_DOWN;
+  }
+  m_ir_thresh = eeprom_read_word((uint16_t *)EOFS_THRESH_IR);
+  if (m_ir_thresh == 0xffff) {
+    m_ir_thresh = TEMPERATURE_INFRARED_THROTTLE_DOWN;
+  }
+}
+
+void TempMonitor::SaveThresh()
+{
+  eeprom_write_word((uint16_t *)EOFS_THRESH_AMBIENT,m_ambient_thresh);
+  eeprom_write_word((uint16_t *)EOFS_THRESH_IR,m_ir_thresh);
+}
+#endif // TEMPERATURE_MONITORING_NY
 
 void TempMonitor::Init()
 {
@@ -439,7 +458,7 @@ void OnboardDisplay::Init()
   LcdPrint_P(0,PSTR("Leader"));
 #endif
   LcdPrint_P(0,1,PSTR("Ver. 0.0.1 "));
-  //LcdPrint_P(VERSTR);
+  //LcdPrint_P("3.0.1");
   wdt_delay(1500);
   WDT_RESET();
 #endif //#ifdef LCD16X2
@@ -920,9 +939,9 @@ void OnboardDisplay::Update(int8_t updmode)
       if (!(g_TempMonitor.OverTemperature() || TEMPERATURE_DISPLAY_ALWAYS)) { 
 #endif // TEMPERATURE_MONITORING
 #ifndef KWH_RECORDING
-      int h = elapsedTime / 3600;
-      int m = (elapsedTime % 3600) / 60;
-      int s = elapsedTime % 60;
+      int h = hour(elapsedTime);          // display the elapsed charge time
+      int m = minute(elapsedTime);
+      int s = second(elapsedTime);
       sprintf(g_sTmp,"%02d:%02d:%02d",h,m,s);
 #ifdef RTC
       g_sTmp[8]=' ';
@@ -1764,8 +1783,8 @@ Menu *RTCMenuDay::Select()
 RTCMenuYear::RTCMenuYear()
 {
 }
-#define YEAR_MIN 23
-#define YEAR_MAX 33
+#define YEAR_MIN 18
+#define YEAR_MAX 28
 void RTCMenuYear::Init()
 {
   g_OBD.LcdPrint_P(0,g_psRTC_Year);
@@ -2457,12 +2476,11 @@ uint8_t StateTransitionReqFunc(uint8_t curPilotState,uint8_t newPilotState,uint8
       retEvseState = EVSE_STATE_A;
     }
   }
-  /*  else { // EVSE_STATE_A
+  else { // EVSE_STATE_A
     // reset back to default max current
     uint8_t amps = g_EvseController.GetMaxCurrentCapacity();
     g_EvseController.SetCurrentCapacity(amps,0,1);
   }
-  */
   //  Serial.print(" r: ");Serial.print(retEvseState);Serial.print(" a: ");Serial.print(g_ACCController.GetCurAmps());
   //  Serial.print(" c: ");Serial.print(curEvseState);Serial.print(" n: ");Serial.print(newEvseState);Serial.print(" r: ");Serial.print(retEvseState);
 
@@ -2491,22 +2509,10 @@ void setup()
   g_EvseController.EnableGndChk(0);
   //g_EvseController.EnableVentReq(0);
   EvseReset();
-  
+
 #ifdef TEMPERATURE_MONITORING
   g_TempMonitor.Init();
 #endif
-
-  
-
-#ifdef BOOTLOCK
-#ifdef LCD16X2
-  g_OBD.LcdMsg_P(PSTR("Waiting for"),PSTR("Initialization.."));
-#endif // LCD16X2
-  while (g_EvseController.IsBootLocked()) {
-    ProcessInputs();
-  }
-#endif // BOOTLOCK
-
 
   WDT_ENABLE();
 }  // setup()

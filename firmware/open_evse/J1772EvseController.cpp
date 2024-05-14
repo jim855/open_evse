@@ -1,7 +1,7 @@
 /*
  * This file is part of Open EVSE.
  *
- * Copyright (c) 2011-2023 Sam C. Lin
+ * Copyright (c) 2011-2021 Sam C. Lin
  *
  * Open EVSE is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -146,7 +146,7 @@ uint32_t MovingAverage(uint32_t samp)
 #endif // AMMETER
 
 J1772EVSEController::J1772EVSEController() :
-  adcPilot(PILOT_PIN)
+  adcPilot(1)
 #ifdef CURRENT_PIN
   , adcCurrent(CURRENT_PIN)
 #endif
@@ -169,7 +169,7 @@ void J1772EVSEController::SaveSettings()
   else {
     dest = (uint8_t *)EOFS_CURRENT_CAPACITY_L2;
   }
-  eeprom_write_byte(dest, GetMaxCurrentCapacity());
+  eeprom_write_byte(dest, GetCurrentCapacity());
   SaveEvseFlags();
 }
 
@@ -309,7 +309,6 @@ void J1772EVSEController::chargingOn()
   }
   else {
     m_AccumulatedChargeTime += m_ElapsedChargeTime;
-    m_ElapsedChargeTime = 0;
   }
 
   m_ChargeOnTimeMS = millis();
@@ -610,16 +609,6 @@ uint8_t J1772EVSEController::GetMaxCurrentCapacity()
   if ((ampacity == 0xff) || (ampacity == 0)) {
     ampacity = (svclvl == 1) ? DEFAULT_CURRENT_CAPACITY_L1 : DEFAULT_CURRENT_CAPACITY_L2;
   }
-
-#ifdef PP_AUTO_AMPACITY
-  if ((m_EvseState >= EVSE_STATE_B) && (m_EvseState <= EVSE_STATE_C)) {
-    uint8_t ppamps =  g_ACCController.GetPPMaxAmps();
-    if (ppamps < ampacity) {
-      ampacity = ppamps;
-    }
-  }
-#endif // PP_AUTO_AMPACITY
-
   
   if (ampacity < MIN_CURRENT_CAPACITY_J1772) {
     ampacity = MIN_CURRENT_CAPACITY_J1772;
@@ -720,7 +709,8 @@ uint8_t J1772EVSEController::doPost()
 #else //!OPENEVSE_2
     
     delay(150); // delay reading for stable pilot before reading
-    int reading = adcPilot.read(); //read pilot
+    //int reading = adcPilot.read(); //read pilot
+    int reading = analogRead(PILOT_PIN); //read pilot
 #ifdef SERDBG
     if (SerDbgEnabled()) {
       Serial.print("Pilot: ");Serial.println((int)reading);
@@ -1089,10 +1079,6 @@ void J1772EVSEController::Init()
 
   m_wVFlags = ECVF_DEFAULT;
 
-#ifdef BOOTLOCK
-  m_wVFlags |= ECVF_BOOT_LOCK;
-#endif
-
   m_MaxHwCurrentCapacity = eeprom_read_byte((uint8_t*)EOFS_MAX_HW_CURRENT_CAPACITY);
   if (!m_MaxHwCurrentCapacity || (m_MaxHwCurrentCapacity == (uint8_t)0xff)) {
     m_MaxHwCurrentCapacity = MAX_CURRENT_CAPACITY_L2;
@@ -1197,7 +1183,8 @@ void J1772EVSEController::ReadPilot(uint16_t *plow,uint16_t *phigh)
 
   // 1x = 114us 20x = 2.3ms 100x = 11.3ms
   for (int i=0;i < PILOT_LOOP_CNT;i++) {
-    uint16_t reading = adcPilot.read();  // measures pilot voltage
+    //uint16_t reading = adcPilot.read();  // measures pilot voltage
+    uint16_t reading = analogRead(PILOT_PIN);  // measures pilot voltage
     
     if (reading > ph) {
       ph = reading;
@@ -2267,6 +2254,58 @@ uint32_t J1772EVSEController::ReadVoltmeter()
   return m_Voltage;
 }
 #endif // VOLTMETER
+void J1772EVSEController::SetSensitivity(float value)
+{
+  sensitivity = value;
+}
+
+uint32_t J1772EVSEController::GetRmsVoltage(uint8_t loopCount = 1)
+{
+  uint32_t period = 1000000 / 30;
+  double readingVoltage = 0.0f;
+  uint32_t millivolatge = 0;
+
+	for (uint8_t i = 0; i < loopCount; i++)
+	{
+		int zeroPoint = this->GetZeroPoint();
+
+		int32_t Vnow = 0;
+		uint32_t Vsum = 0;
+		uint32_t measurements_count = 0;
+		uint32_t t_start = micros();
+
+		while (micros() - t_start < period)
+		{
+			//Vnow = adcVoltMeter.read() - zeroPoint;
+      Vnow = analogRead(A3) - zeroPoint;
+			Vsum += (Vnow * Vnow);
+			measurements_count++;
+		}
+
+		readingVoltage += sqrt(Vsum / measurements_count) / ADC_SCALE * VREF * sensitivity;
+	}
+
+  millivolatge = (uint32_t)((readingVoltage / loopCount)*1000);
+
+	return millivolatge ;
+}
+
+int J1772EVSEController::GetZeroPoint()
+{
+  uint32_t period = 1000000 / 30;
+  uint32_t Vsum = 0;
+	uint32_t measurements_count = 0;
+	uint32_t t_start = micros();
+
+	while (micros() - t_start < period)
+	{
+		//Vsum += adcVoltMeter.read();
+    Vsum += analogRead(A3);
+		measurements_count++;
+	}
+
+	return Vsum / measurements_count;
+}
 
 #ifdef CHARGE_LIMIT
 void J1772EVSEController::SetChargeLimitkWh(uint8_t kwh)

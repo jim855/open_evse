@@ -3,7 +3,7 @@
     "core": "arduino",
     "extra_flags": "-DARDUINO_ARCH_AVR -DAVR_OPENEVSE",
     "f_cpu": "16000000L",
-    "mcu": "atmega328p",
+    "mcu": "atmega328pb",
     "variant": "standard"
   },
   "frameworks": [

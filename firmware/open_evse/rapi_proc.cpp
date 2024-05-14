@@ -2,7 +2,7 @@
 /*
  * Open EVSE Firmware
  *
- * Copyright (c) 2013-2023 Sam C. Lin <lincomatic@gmail.com>
+ * Copyright (c) 2013-2021 Sam C. Lin <lincomatic@gmail.com>
  *
  * This file is part of Open EVSE.
 
@@ -445,19 +445,6 @@ int EvseRapiProcessor::processCmd()
       }
       break;
 #endif // AMMETER
-#ifdef BOOTLOCK
-    case 'B':
-      if (g_EvseController.InFaultState()) {
-        strcpy(buffer,"1");
-      }
-      else {
-        g_EvseController.ClearBootLock();
-        strcpy(buffer,"0");
-      }
-      bufCnt=1;
-      rc = 0;
-      break;
-#endif // BOOTLOCK
     case 'C': // current capacity
       if ((tokenCnt == 2) || (tokenCnt == 3)) {
 	u2.u8 = dtou32(tokens[1]);
@@ -706,7 +693,17 @@ int EvseRapiProcessor::processCmd()
 #if defined(AMMETER)||defined(VOLTMETER)
     case 'G':
       u1.i32 = g_EvseController.GetChargingCurrent();
-      u2.i32 = (int32_t)g_EvseController.GetVoltage();
+      //u2.i32 = (int32_t)g_EvseController.GetVoltage();
+
+      /////////////////////////////////////////////////////
+      g_EvseController.SetSensitivity(592);
+      if (g_EvseController.GetRmsVoltage()<150)
+      {
+        g_EvseController.SetSensitivity(630);
+      }
+      u2.i32 = (int32_t)g_EvseController.GetRmsVoltage();
+      /////////////////////////////////////////////////////
+
       sprintf(buffer,"%ld %ld",u1.i32,u2.i32);
       bufCnt = 1; // flag response text output
       rc = 0;

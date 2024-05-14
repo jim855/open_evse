@@ -2,7 +2,7 @@
 /*
  * This file is part of Open EVSE.
  *
- * Copyright (c) 2011-2023 Sam C. Lin
+ * Copyright (c) 2011-2021 Sam C. Lin
  *
  * Open EVSE is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ typedef uint8_t (*EvseStateTransitionReqFunc)(uint8_t prevPilotState,uint8_t cur
 #define ECVF_UI_IN_MENU         0x0800 // onboard UI currently in a menu
 #define ECVF_TIMER_ON           0x1000 // delay timer enabled
 #define ECVF_CHARGE_LIMIT       0x2000
-#define ECVF_BOOT_LOCK          0x4000 // locked at boot
+// reserved #define ECVF_BOOT_LOCK          0x4000 // locked at boot
 #define ECVF_MENNEKES_MANUAL    0x8000 // Mennekes lock manual mode
 #if defined(AUTH_LOCK) && (AUTH_LOCK != 0)
 #define ECVF_DEFAULT            ECVF_AUTH_LOCKED|ECVF_SESSION_ENDED
@@ -129,6 +129,9 @@ typedef uint8_t (*EvseStateTransitionReqFunc)(uint8_t prevPilotState,uint8_t cur
 // for ECF_CGMI
 #define GND_TEST_PIN_OPEN ACPIN2_OPEN
 #define RLY_TEST_PIN_OPEN ACPIN1_OPEN
+
+#define ADC_SCALE 1023.0f
+#define VREF 5.0f
 
 class J1772EVSEController {
   J1772Pilot m_Pilot;
@@ -276,6 +279,7 @@ class J1772EVSEController {
   uint16_t m_VoltScaleFactor;
   uint32_t m_VoltOffset;
 #endif // VOLTMETER
+  float sensitivity = 500.0f;
   uint32_t m_Voltage; // mV
 
 #ifdef HEARTBEAT_SUPERVISION
@@ -389,17 +393,6 @@ public:
   uint8_t ReadACPins();
 #endif // ADVPWR
 
-  void ClearBootLock() {
-    clrVFlags(ECVF_BOOT_LOCK);
-  }
-  uint8_t IsBootLocked() {
-#ifdef BOOTLOCK
-    return vFlagIsSet(ECVF_BOOT_LOCK) ? 1 : 0;
-#else
-    return 0;
-#endif
-  }
-
   void HardFault(int8_t recoverable);
 
   void SetLimitSleep(int8_t tf) {
@@ -456,6 +449,9 @@ int GetHearbeatTrigger();
   void SetVoltmeter(uint16_t scale,uint32_t offset);
   uint32_t ReadVoltmeter();
 #endif // VOLTMETER
+  void SetSensitivity(float value);
+  uint32_t GetRmsVoltage(uint8_t loopCount = 1);
+  int 	 GetZeroPoint();
 #ifdef AMMETER
   int32_t GetChargingCurrent() {
 #ifdef OCPPDBG

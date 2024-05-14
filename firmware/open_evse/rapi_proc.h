@@ -2,7 +2,7 @@
 /*
  * Open EVSE Firmware
  *
- * Copyright (c) 2013-2023 Sam C. Lin <lincomatic@gmail.com>
+ * Copyright (c) 2013-2021 Sam C. Lin <lincomatic@gmail.com>
  *
  * This file is part of Open EVSE.
 
@@ -172,10 +172,6 @@ S5 A|M|0|1 - Mennekes lock setting
    1 = lock (valid only in manual mode)
    n.b. requires MENNEKES_LOCK. manual mode is volatile - always boots in automatic mode
 SA currentscalefactor currentoffset - set ammeter settings
-SB - clear boot lock
-  when BOOTLOCK is defined, EVSE won't allow charging after boot up until SB is received
- response: $OK 0 = unlock success
-           $OK 1 = unlock fail - EVSE currently in fault state
 SC amps [V|M]- set current capacity
  response:
    if amps < minimum current capacity, will set to minimum and return $NK ampsset
@@ -260,8 +256,6 @@ GC - get current capacity info
  hmaxamps - max hardware allowed current capacity MAX_CURRENT_CAPACITY_Ln
  pilotamps - current capacity advertised by pilot
  cmaxamps - max configured allowed current capacity (saved to EEPROM)
-     if PP_AUTO_AMPACITY is enabled, then  in STATE B/C returns max capacity
-     read from PP if lower than max configured capacity
  n.b. maxamps,emaxamps values are dependent on the active service level (L1/L2)
  $GC^20
 
@@ -355,7 +349,7 @@ GY - Get Hearbeat Supervision Status
 Z0 FOR TESTING RELAY_AUTO_PWM_PIN ONLY
 Z0 closems holdpwm
    closems(dec) = # ms to apply DC to relay pin
-   holdpwm(dec) = pwm duty cycle for relay hold 0-255
+   holdpwm(dec) = pwm duty cycle for relay hold 0-255GG
 
 
  *

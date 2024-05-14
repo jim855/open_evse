@@ -49,7 +49,7 @@
 #define clrBits(flags,bits) (flags &= ~(bits))
 
 #ifndef VERSION
-#define VERSION "8.2.3"
+#define VERSION "8.2.1"
 #endif // !VERSION
 
 #include "Language_default.h"   //Default language should always be included as bottom layer
@@ -78,9 +78,6 @@ typedef unsigned long time_t;
 #ifndef NO_AUTOSVCLEVEL
 #define AUTOSVCLEVEL
 #endif
-
-// on boot, EVSE locked until receives $SB 
-//#define BOOTLOCK
 
 // show disabled tests before POST
 #define SHOW_DISABLED_TESTS
@@ -175,6 +172,7 @@ extern AutoCurrentCapacityController g_ACCController;
 // If you loop a wire from the third GFI pin through the CT a few times and then to ground,
 // enable this. ADVPWR must also be defined.
 #define GFI_SELFTEST
+//#undef GFI_SELFTEST
 
 // behavior specified by UL
 // 1) if enabled, POST failure will cause a hard fault until power cycled.
@@ -182,6 +180,7 @@ extern AutoCurrentCapacityController g_ACCController;
 // 2) if enabled, any a fault occurs immediately after charge is initiated,
 //    hard fault until power cycled. Otherwise, do the standard delay/retry sequence
 #define UL_COMPLIANT
+//#undef UL_COMPLIANT
 
 #ifdef UL_COMPLIANT
 #define ADVPWR
@@ -259,7 +258,7 @@ extern AutoCurrentCapacityController g_ACCController;
 // How to use 1-button menu
 // Long press activates menu
 // When within menus, short press cycles menu items, long press selects and exits current submenu
-#define BTN_MENU
+// #define BTN_MENU
 
 // take out basic setup stuff that the user really shouldn't be changing,
 // which can be set via RAPI/WiFi module.. reclaims a lot of code space
@@ -440,10 +439,10 @@ extern AutoCurrentCapacityController g_ACCController;
 
 // current capacity in amps
 #ifndef DEFAULT_CURRENT_CAPACITY_L1
-#define DEFAULT_CURRENT_CAPACITY_L1 12
+#define DEFAULT_CURRENT_CAPACITY_L1 32
 #endif
 #ifndef DEFAULT_CURRENT_CAPACITY_L2
-#define DEFAULT_CURRENT_CAPACITY_L2 24
+#define DEFAULT_CURRENT_CAPACITY_L2 32
 #endif
 
 // minimum allowable current in amps
@@ -462,8 +461,10 @@ extern AutoCurrentCapacityController g_ACCController;
 //J1772EVSEController
 
 #define CURRENT_PIN 0 // analog current reading pin ADCx
-#define PILOT_PIN 1 // analog pilot voltage reading pin ADCx
+//#define PILOT_PIN 1 // analog pilot voltage reading pin ADCx
+#define PILOT_PIN A1 // analog pilot voltage reading pin ADCx
 #define PP_PIN 2 // PP_READ - ADC2
+#define VOLTMETER_PIN A3
 #ifdef VOLTMETER
 // N.B. Note, ADC2 is already used as PP_PIN so beware of potential clashes
 // voltmeter pin is ADC2 on OPENEVSE_2
@@ -575,7 +576,7 @@ extern AutoCurrentCapacityController g_ACCController;
 // Duration in seconds:
 #define EOFS_HEARTBEAT_SUPERVISION_INTERVAL 34 // 2 bytes (zero if infinite)
 // Fallback Current in quarter Amperes:
-#define EOFS_HEARTBEAT_SUPERVISION_CURRENT 36 // 1 byte
+#define EOFS_HEARTBEAT_SUPERVISION_CURRENT 36 // 1 byte 
 
 #define EOFS_RELAY_CLOSE_MS 37 // 1 byte
 #define EOFS_RELAY_HOLD_PWM 38 // 1 byte
@@ -995,6 +996,11 @@ public:
 #ifdef TMP007_IS_ON_I2C
   Adafruit_TMP007 m_tmp007;
 #endif  //TMP007_IS_ON_I2C
+#ifdef TEMPERATURE_MONITORING_NY
+  int16_t m_ambient_thresh;
+  int16_t m_ir_thresh;
+  int16_t m_TMP007_thresh;
+#endif //TEMPERATURE_MONITORING_NY
   // these three temperatures need to be signed integers
   int16_t m_MCP9808_temperature;  // 230 means 23.0C  Using an integer to save on floating point library use
   int16_t m_DS3231_temperature;   // the DS3231 RTC has a built in temperature sensor
