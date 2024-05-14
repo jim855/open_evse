@@ -436,10 +436,10 @@ void OnboardDisplay::Init()
 #ifdef OPENEVSE_2
   LcdPrint_P(0,PSTR("Open EVSE II"));
 #else
-  LcdPrint_P(0,PSTR("Open EVSE"));
+  LcdPrint_P(0,PSTR("Leader"));
 #endif
-  LcdPrint_P(0,1,PSTR("Ver. "));
-  LcdPrint_P(VERSTR);
+  LcdPrint_P(0,1,PSTR("Ver. 0.0.1 "));
+  //LcdPrint_P(VERSTR);
   wdt_delay(1500);
   WDT_RESET();
 #endif //#ifdef LCD16X2
@@ -2486,6 +2486,10 @@ void setup()
 #ifdef PP_AUTO_AMPACITY
   g_EvseController.SetStateTransitionReqFunc(&StateTransitionReqFunc);
 #endif //PP_AUTO_AMPACITY
+  //g_EvseController.EnableGfiSelfTest(0);
+  //g_EvseController.EnableDiodeCheck(0);
+  g_EvseController.EnableGndChk(0);
+  //g_EvseController.EnableVentReq(0);
   EvseReset();
   
 #ifdef TEMPERATURE_MONITORING

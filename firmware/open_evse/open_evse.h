@@ -315,7 +315,8 @@ extern AutoCurrentCapacityController g_ACCController;
 // if defined, this pin goes HIGH when the EVSE is sleeping, and LOW otherwise
 //#define SLEEP_STATUS_REG &PINB
 //#define SLEEP_STATUS_IDX 4
-
+#undef AUTH_LOCK_REG
+#define AUTH_LOCK 1
 #ifdef AUTH_LOCK
 // AUTH_LOCK_REG/IDX - use an input pin to control AUTH_LOCK instead of
 // manual function calls
@@ -452,7 +453,7 @@ extern AutoCurrentCapacityController g_ACCController;
 
 // maximum allowable current in amps
 #ifndef MAX_CURRENT_CAPACITY_L1
-#define MAX_CURRENT_CAPACITY_L1 24 // J1772 Max for L1 on a 20A circuit = 16, 15A circuit = 12 Some Vehicles suppoty 24A on 30A RV outlet TT-30
+#define MAX_CURRENT_CAPACITY_L1 32 // J1772 Max for L1 on a 20A circuit = 16, 15A circuit = 12 Some Vehicles suppoty 24A on 30A RV outlet TT-30
 #endif
 #ifndef MAX_CURRENT_CAPACITY_L2
 #define MAX_CURRENT_CAPACITY_L2 80 // J1772 Max for L2 = 80
